@@ -7,7 +7,14 @@ use App\Http\Controllers\ImagesController;
 use App\Http\Controllers\OrganizationsController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\StackController;
+use App\Http\Controllers\QuestionController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+
+use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,65 +76,6 @@ Route::put('users/{user}/restore', [UsersController::class, 'restore'])
     ->name('users.restore')
     ->middleware('auth');
 
-// Organizations
-
-Route::get('organizations', [OrganizationsController::class, 'index'])
-    ->name('organizations')
-    ->middleware('auth');
-
-Route::get('organizations/create', [OrganizationsController::class, 'create'])
-    ->name('organizations.create')
-    ->middleware('auth');
-
-Route::post('organizations', [OrganizationsController::class, 'store'])
-    ->name('organizations.store')
-    ->middleware('auth');
-
-Route::get('organizations/{organization}/edit', [OrganizationsController::class, 'edit'])
-    ->name('organizations.edit')
-    ->middleware('auth');
-
-Route::put('organizations/{organization}', [OrganizationsController::class, 'update'])
-    ->name('organizations.update')
-    ->middleware('auth');
-
-Route::delete('organizations/{organization}', [OrganizationsController::class, 'destroy'])
-    ->name('organizations.destroy')
-    ->middleware('auth');
-
-Route::put('organizations/{organization}/restore', [OrganizationsController::class, 'restore'])
-    ->name('organizations.restore')
-    ->middleware('auth');
-
-// Contacts
-
-Route::get('contacts', [ContactsController::class, 'index'])
-    ->name('contacts')
-    ->middleware('auth');
-
-Route::get('contacts/create', [ContactsController::class, 'create'])
-    ->name('contacts.create')
-    ->middleware('auth');
-
-Route::post('contacts', [ContactsController::class, 'store'])
-    ->name('contacts.store')
-    ->middleware('auth');
-
-Route::get('contacts/{contact}/edit', [ContactsController::class, 'edit'])
-    ->name('contacts.edit')
-    ->middleware('auth');
-
-Route::put('contacts/{contact}', [ContactsController::class, 'update'])
-    ->name('contacts.update')
-    ->middleware('auth');
-
-Route::delete('contacts/{contact}', [ContactsController::class, 'destroy'])
-    ->name('contacts.destroy')
-    ->middleware('auth');
-
-Route::put('contacts/{contact}/restore', [ContactsController::class, 'restore'])
-    ->name('contacts.restore')
-    ->middleware('auth');
 
 // Reports
 
@@ -140,3 +88,53 @@ Route::get('reports', [ReportsController::class, 'index'])
 Route::get('/img/{path}', [ImagesController::class, 'show'])
     ->where('path', '.*')
     ->name('image');
+
+// Quiz
+
+Route::get('quiz', [QuizController::class, 'index'])
+    ->name('quiz');
+
+Route::get('subject/{subject}/edit', [SubjectController::class, 'edit'])
+    ->name('subject.edit')
+    ->middleware('auth');
+
+Route::get('stack/{stack}', [StackController::class, 'show'])
+    ->name('stsack.show')
+    ->middleware('auth');
+
+Route::get('stack/{stack}/edit', [StackController::class, 'edit'])
+    ->name('stack.edit')
+    ->middleware('auth');
+
+Route::get('question/{question}/edit', [QuestionController::class, 'edit'])
+    ->name('question.edit')
+    ->middleware('auth');
+
+Route::post('question/{question}/choice/add', function(App\Models\Question $question){
+    $question->choices()->create([
+        'choice' => '',
+        'correct' => false
+    ]);
+    
+    $question->save();
+
+    return Redirect::back()->with('success', 'Choice was added.');
+
+    // return response()->json($question->load('choices'));
+})
+    ->name('question.choice.add')
+    ->middleware('auth');
+
+Route::put('question/{question}', [QuestionController::class, 'update'])
+    ->name('question.update')
+    ->middleware('auth');
+
+Route::get('/question/search', function (Request $request) {
+        $search = App\Models\Question::search($request->search)->get();
+        $search->load('stack');
+        return $search;
+    });
+
+Route::get('images/', [ImagesController::class, 'index'])
+    ->name('images.index')
+    ->middleware('auth');

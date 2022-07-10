@@ -40,7 +40,6 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
-        'owner' => 'boolean',
         'email_verified_at' => 'datetime',
     ];
 
@@ -49,14 +48,10 @@ class User extends Authenticatable
         return $this->where($field ?? 'id', $value)->withTrashed()->firstOrFail();
     }
 
-    public function account()
-    {
-        return $this->belongsTo(Account::class);
-    }
-
     public function getNameAttribute()
     {
-        return $this->first_name.' '.$this->last_name;
+        return $this->attributes['name'];
+        // return $this->first_name.' '.$this->last_name;
     }
 
     public function setPasswordAttribute($password)
@@ -64,14 +59,9 @@ class User extends Authenticatable
         $this->attributes['password'] = Hash::needsRehash($password) ? Hash::make($password) : $password;
     }
 
-    public function isDemoUser()
-    {
-        return $this->email === 'johndoe@example.com';
-    }
-
     public function scopeOrderByName($query)
     {
-        $query->orderBy('last_name')->orderBy('first_name');
+        $query->orderBy('name');
     }
 
     public function scopeWhereRole($query, $role)
@@ -82,21 +72,32 @@ class User extends Authenticatable
         }
     }
 
+    /**
+     * 
+     */
+    public function ip()
+    {
+        return $this->hasMany(Ip::class)->latest();
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search'] ?? null, function ($query, $search) {
             $query->where(function ($query) use ($search) {
-                $query->where('first_name', 'like', '%'.$search.'%')
-                    ->orWhere('last_name', 'like', '%'.$search.'%')
+                $query->where('name', 'like', '%'.$search.'%')
                     ->orWhere('email', 'like', '%'.$search.'%');
             });
-        })->when($filters['role'] ?? null, function ($query, $role) {
-            $query->whereRole($role);
         })->when($filters['trashed'] ?? null, function ($query, $trashed) {
             if ($trashed === 'with') {
                 $query->withTrashed();
             } elseif ($trashed === 'only') {
                 $query->onlyTrashed();
+            }
+        })->when($filters['verified'] ?? null, function ($query, $verified) {
+            if ($verified === 'false') {
+                $query->whereNull('email_verified_at');
+            } elseif ($verified === 'true') {
+                $query->whereNotNull('email_verified_at');
             }
         });
     }
